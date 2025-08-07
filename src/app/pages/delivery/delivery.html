@@ -1,0 +1,35 @@
+<div class="delivery-container">
+
+  <h2>Panel del Delivery</h2>
+
+  <!-- Mapa -->
+  <div id="map" style="height: 300px; margin-bottom: 20px;">
+    <p>Mapa de ubicación actual (aquí irá Leaflet)</p>
+  </div>
+
+  <!-- Lista de paquetes -->
+  <h3>Paquetes asignados</h3>
+  <table class="grid">
+    <thead>
+      <tr>
+        <th>Dirección</th>
+        <th>Estado</th>
+        <th>Cambiar Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let paquete of paquetes()">
+        <td>{{ paquete.direccion }}</td>
+        <td>{{ paquete.status }}</td>
+        <td>
+          <select [value]="paquete.status" (change)="cambiarEstado(paquete, $event)">
+            <option value="En tránsito">En tránsito</option>
+            <option value="Entregado">Entregado</option>
+            <option value="Regresado">Regresado</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
