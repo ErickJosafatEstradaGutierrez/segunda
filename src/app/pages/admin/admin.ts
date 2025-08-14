@@ -56,7 +56,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initSocket() {
-    this.socket = io('http://localhost:3000');
+    this.socket = io('http://72.60.31.237:4000');
 
     // Escuchar cambios de ubicación en tiempo real
     this.socket.on('locationUpdated', (data: { userId: number; lat: number; lng: number }) => {
@@ -69,7 +69,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadDeliveryData(): void {
-    this.http.get<DeliveryUser[]>('http://localhost:3000/usuarios?rol=delivery').subscribe({
+    this.http.get<DeliveryUser[]>('http://72.60.31.237:3000/usuarios?rol=delivery').subscribe({
       next: (data) => {
         this.deliveries = data;
         this.loading = false;
@@ -142,7 +142,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.http.post('http://localhost:3000/paquetes', {
+    this.http.post('http://72.60.31.237:4000/paquetes', {
       nombre_repartidor: this.selectedDelivery,
       direccion: this.paqueteUbicacion
     })

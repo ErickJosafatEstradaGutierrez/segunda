@@ -12,7 +12,7 @@ interface LoginResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/login'; // URL de tu backend
+  private apiUrl = 'http://72.60.31.237:4000/login'; // URL de tu backend
 
   constructor(private http: HttpClient) {}
 
