@@ -2,6 +2,11 @@
 
   <h2>Panel del Delivery</h2>
 
+  <!-- Botón WORKING / OFF -->
+  <button *ngIf="repartidorActual" (click)="toggleWorking()">
+    {{ repartidorActual.status === 'activo' ? 'WORKING' : 'OFF' }}
+  </button>
+
   <!-- Mapa -->
   <div id="map" style="height: 300px; margin-bottom: 20px;">
     <p>Mapa de ubicación actual (aquí irá Leaflet)</p>

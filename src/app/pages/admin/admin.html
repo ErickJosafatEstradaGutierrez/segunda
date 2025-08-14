@@ -2,9 +2,9 @@
 
   <h2>Panel del Administrador</h2>
 
-  <!-- Mapa (por ahora div vacío con tamaño) -->
+  <!-- Mapa -->
   <div id="map" style="height: 400px;">
-    <p>Mapa de ubicaciones (Leaflet aquí más adelante)</p>
+    <p *ngIf="loading">Cargando mapa...</p>
   </div>
 
   <!-- GRID de entregadores -->
@@ -18,33 +18,38 @@
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>Erick</td>
-        <td>working</td>
-        <td>19.4326, -99.1332</td>
-      </tr>
-      <tr>
-        <td>Pablito</td>
-        <td>off</td>
-        <td>-</td>
-      </tr>
-      <tr>
-        <td>Otro</td>
-        <td>working</td>
-        <td>19.45, -99.14</td>
+      <tr *ngFor="let delivery of deliveries">
+        <td>{{ delivery.usuario }}</td>
+        <td>{{ getStatusText(delivery.status) }}</td>
+        <td>{{ delivery.ubicacion || '-' }}</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Botón para asignar paquete -->
-  <button class="btn-assign" (click)="openModal()">Asignar Paquete</button>
+  <button class="btn-assign" (click)="openModal()" [disabled]="loading">
+    Asignar Paquete
+  </button>
 
   <!-- Modal -->
   <div class="modal-backdrop" *ngIf="showModal">
     <div class="modal">
       <h3>Asignar paquete</h3>
-      <p>Aquí podrás asignar paquetes a los deliveries.</p>
-      <button (click)="closeModal()">Cerrar</button>
+
+      <label for="deliverySelect">Selecciona un delivery:</label>
+      <select id="deliverySelect" [(ngModel)]="selectedDelivery">
+        <option *ngFor="let delivery of deliveries" [value]="delivery.usuario" [disabled]="delivery.status !== 'activo'">
+          {{ delivery.usuario }} ({{ getStatusText(delivery.status) }})
+        </option>
+      </select>
+
+      <label for="ubicacionInput">Ubicación del paquete:</label>
+      <input id="ubicacionInput" type="text" [(ngModel)]="paqueteUbicacion" placeholder="lat,lng">
+
+      <div class="modal-buttons">
+        <button (click)="asignarPaquete()">Asignar</button>
+        <button (click)="closeModal()">Cerrar</button>
+      </div>
     </div>
   </div>
 

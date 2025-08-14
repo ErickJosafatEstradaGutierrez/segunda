@@ -1,35 +1,79 @@
-import { Component, signal, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import * as L from 'leaflet';
+import { Component, signal, AfterViewInit, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { io, Socket } from 'socket.io-client';
 
 interface Paquete {
   id: number;
+  nombre_repartidor: string | null;
   direccion: string;
   status: 'En tránsito' | 'Entregado' | 'Regresado';
+}
+
+interface Repartidor {
+  id: number;
+  nombre: string;
+  status: 'activo' | 'off';
 }
 
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HttpClientModule],
   templateUrl: './delivery.html',
   styleUrls: ['./delivery.css']
 })
-export class Delivery implements AfterViewInit {
-  paquetes = signal<Paquete[]>([
-    { id: 1, direccion: 'Av. Reforma 123, CDMX', status: 'En tránsito' },
-    { id: 2, direccion: 'Calle Hidalgo 456, Puebla', status: 'Entregado' },
-    { id: 3, direccion: 'Blvd. López Mateos 789, GDL', status: 'Regresado' }
-  ]);
+export class Delivery implements AfterViewInit, OnDestroy {
+  paquetes = signal<Paquete[]>([]);
+  repartidorActual: Repartidor = { id: 2, nombre: 'Repartidor fijo', status: 'off' };
 
-  private map!: L.Map;
-  private marker!: L.Marker;
+  private map: any;
+  private marker: any;
+  private watchId: number | null = null;
+  private L: any;
+  private accuracyCircle: any;
+  private socket!: Socket;
+  private intervalId: any;
+
+  constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {}
+
+  async ngAfterViewInit(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.L = await import('leaflet');
+    this.initMap();
+    this.cargarPaquetes();
+
+    // Conectar Socket.IO
+    this.socket = io('http://localhost:3000');
+
+    // Enviar ubicación cada 10 segundos
+    this.intervalId = setInterval(() => this.enviarUbicacion(), 10000);
+  }
+
+  private cargarPaquetes(): void {
+    this.http.get<Paquete[]>('http://localhost:3000/paquetes')
+      .subscribe({
+        next: data => this.paquetes.set(data),
+        error: err => console.error('Error cargando paquetes:', err)
+      });
+  }
+
+  toggleWorking(): void {
+    const nuevoEstado: 'activo' | 'off' = this.repartidorActual.status === 'activo' ? 'off' : 'activo';
+
+    this.http.patch(`http://localhost:3000/usuarios/${this.repartidorActual.id}/status`, { status: nuevoEstado })
+      .subscribe({
+        next: () => this.repartidorActual.status = nuevoEstado,
+        error: err => console.error('Error actualizando estado del repartidor:', err)
+      });
+  }
 
   cambiarEstado(paquete: Paquete, event: Event) {
-    const select = event.target as HTMLSelectElement | null;
-    if (!select) return;
+    const select = event.target as HTMLSelectElement;
     const nuevoEstado = select.value as Paquete['status'];
 
+    // Frontend
     this.paquetes.update(lista => {
       const idx = lista.findIndex(p => p.id === paquete.id);
       if (idx === -1) return lista;
@@ -37,37 +81,69 @@ export class Delivery implements AfterViewInit {
       copia[idx] = { ...copia[idx], status: nuevoEstado };
       return copia;
     });
+
+    // Backend
+    this.http.patch(`http://localhost:3000/paquetes/${paquete.id}`, { status: nuevoEstado })
+      .subscribe({
+        next: () => console.log('Estado actualizado correctamente'),
+        error: err => console.error('Error actualizando estado:', err)
+      });
   }
 
-  ngAfterViewInit(): void {
-    // Inicializa el mapa en un punto por defecto
-    this.map = L.map('map').setView([19.4326, -99.1332], 13); // CDMX como default
-
-    // Añade capa de mapas (OpenStreetMap)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  private initMap(): void {
+    this.map = this.L.map('map').setView([19.4326, -99.1332], 13);
+    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
 
-    // Intenta obtener la ubicación actual del usuario
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const latlng = [pos.coords.latitude, pos.coords.longitude] as [number, number];
-          this.map.setView(latlng, 15);
-
-          // Añade marcador en la ubicación actual
-          if (this.marker) {
-            this.marker.setLatLng(latlng);
-          } else {
-            this.marker = L.marker(latlng).addTo(this.map).bindPopup('Tu ubicación actual').openPopup();
-          }
-        },
-        (err) => {
-          console.warn(`Error obteniendo ubicación: ${err.message}`);
-        }
+      this.watchId = navigator.geolocation.watchPosition(
+        pos => this.actualizarUbicacion(pos),
+        err => console.warn(err),
+        { enableHighAccuracy: true }
       );
-    } else {
-      console.warn('Geolocalización no está disponible en este navegador.');
     }
+  }
+
+  private actualizarUbicacion(pos: GeolocationPosition) {
+    const latlng: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+    this.map.setView(latlng, 15);
+
+    if (this.marker) this.marker.setLatLng(latlng);
+    else this.marker = this.L.marker(latlng).addTo(this.map).bindPopup('Tu ubicación actual').openPopup();
+
+    if (this.accuracyCircle) this.map.removeLayer(this.accuracyCircle);
+    this.accuracyCircle = this.L.circle(latlng, {
+      radius: pos.coords.accuracy,
+      fillColor: '#136AEC',
+      fillOpacity: 0.15,
+      color: '#136AEC',
+      weight: 1
+    }).addTo(this.map);
+  }
+
+  private enviarUbicacion() {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      // Emitir la ubicación via Socket.IO
+      this.socket.emit('updateLocation', {
+        userId: this.repartidorActual.id,
+        lat,
+        lng
+      });
+
+      console.log(`Ubicación enviada: ${lat}, ${lng}`);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+    if (this.map) this.map.remove();
+    if (this.intervalId) clearInterval(this.intervalId);
+    if (this.socket) this.socket.disconnect();
   }
 }

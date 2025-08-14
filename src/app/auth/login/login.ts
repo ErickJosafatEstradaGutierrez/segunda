@@ -22,14 +22,18 @@ export class Login {
     this.error = '';
     const payload = { usuario: this.username, contrasena: this.password };
 
-    this.http.post<{rol: string; usuario: string; message: string}>('http://localhost:3000/login', payload)
-      .subscribe({
-        next: (res) => {
-          if (res.rol === 'admin') this.router.navigate(['/admin']);
-          else if (res.rol === 'delivery') this.router.navigate(['/delivery']);
-          else this.error = 'Rol desconocido';
-        },
-        error: (err) => this.error = err.error?.error || 'Error al iniciar sesión'
-      });
+    this.http.post<{rol: string; usuario: string; message: string}>(
+      'http://localhost:3000/login',
+      payload,
+      { withCredentials: true } // ⚠️ permite que la cookie llegue al navegador
+    )
+    .subscribe({
+      next: (res) => {
+        if (res.rol === 'admin') this.router.navigate(['/admin']);
+        else if (res.rol === 'delivery') this.router.navigate(['/delivery']);
+        else this.error = 'Rol desconocido';
+      },
+      error: (err) => this.error = err.error?.error || 'Error al iniciar sesión'
+    });
   }
 }
