@@ -45,7 +45,10 @@ export class Delivery implements AfterViewInit, OnDestroy {
     this.cargarPaquetes();
 
     // Conectar Socket.IO
-    this.socket = io('http://72.60.31.237:4000');
+    this.socket = io('http://72.60.31.237', {
+    path: '/proyecto2/socket.io', // Nginx redirige /proyecto2/socket.io al backend
+    transports: ['websocket']
+    });
 
     // Enviar ubicación cada 10 segundos
     this.intervalId = setInterval(() => this.enviarUbicacion(), 10000);

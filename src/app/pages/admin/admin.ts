@@ -56,7 +56,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initSocket() {
-    this.socket = io('http://72.60.31.237:4000');
+    this.socket = io('http://72.60.31.237');
 
     // Escuchar cambios de ubicación en tiempo real
     this.socket.on('locationUpdated', (data: { userId: number; lat: number; lng: number }) => {
