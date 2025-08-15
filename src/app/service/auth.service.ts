@@ -12,11 +12,15 @@ interface LoginResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://72.60.31.237:proyecto2/login'; // URL de tu backend
+  private apiUrl = 'https://72.60.31.237/api/login'; // URL corregida
 
   constructor(private http: HttpClient) {}
 
   login(usuario: string, contrasena: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(this.apiUrl, { usuario, contrasena });
+    return this.http.post<LoginResponse>(
+      this.apiUrl, 
+      { usuario, contrasena },
+      { withCredentials: true } // Importante para manejar cookies/sesión
+    );
   }
 }

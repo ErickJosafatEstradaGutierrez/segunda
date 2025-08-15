@@ -6,23 +6,34 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import cors from 'cors';
+import bodyParser from 'body-parser';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+// Configuración de middleware para el backend
+app.use(cors({
+  origin: 'https://72.60.31.237',
+  credentials: true
+}));
+app.use(bodyParser.json());
+
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * Endpoints API para el backend
  */
+app.post('/api/login', (req, res) => {
+  // Este endpoint será manejado por tu lógica de backend real
+  res.status(501).json({ error: 'Implementar lógica de login' });
+});
+
+app.get('/api/deliveries', (req, res) => {
+  res.status(501).json({ error: 'Implementar lógica de deliveries' });
+});
+
+// Agrega aquí más endpoints API según necesites
 
 /**
  * Serve static files from /browser
@@ -49,16 +60,12 @@ app.use((req, res, next) => {
 
 /**
  * Start the server if this module is the main entry point.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 4000;
-  app.listen(port, (error) => {
-    if (error) {
-      throw error;
-    }
-
-    console.log(`Node Express server listening on https://72.60.31.237:${port}`);
+  app.listen(port, () => {
+    console.log(`Server running on https://72.60.31.237:${port}`);
+    console.log(`API endpoints available at https://72.60.31.237:${port}/api`);
   });
 }
 

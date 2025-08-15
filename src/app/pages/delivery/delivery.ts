@@ -45,9 +45,9 @@ export class Delivery implements AfterViewInit, OnDestroy {
     this.cargarPaquetes();
 
     // Conectar Socket.IO
-    this.socket = io('http://72.60.31.237', {
-    path: '/proyecto2/socket.io', // Nginx redirige /proyecto2/socket.io al backend
-    transports: ['websocket']
+    this.socket = io('https://72.60.31.237', {
+      path: '/api/socket.io',
+      transports: ['websocket']
     });
 
     // Enviar ubicación cada 10 segundos
@@ -55,7 +55,7 @@ export class Delivery implements AfterViewInit, OnDestroy {
   }
 
   private cargarPaquetes(): void {
-    this.http.get<Paquete[]>('http://72.60.31.237:4000/paquetes')
+    this.http.get<Paquete[]>('https://72.60.31.237/api/paquetes')
       .subscribe({
         next: data => this.paquetes.set(data),
         error: err => console.error('Error cargando paquetes:', err)
@@ -65,7 +65,7 @@ export class Delivery implements AfterViewInit, OnDestroy {
   toggleWorking(): void {
     const nuevoEstado: 'activo' | 'off' = this.repartidorActual.status === 'activo' ? 'off' : 'activo';
 
-    this.http.patch(`http://72.60.31.237:4000/usuarios/${this.repartidorActual.id}/status`, { status: nuevoEstado })
+    this.http.patch(`https://72.60.31.237/api/usuarios/${this.repartidorActual.id}/status`, { status: nuevoEstado })
       .subscribe({
         next: () => this.repartidorActual.status = nuevoEstado,
         error: err => console.error('Error actualizando estado del repartidor:', err)
@@ -86,7 +86,7 @@ export class Delivery implements AfterViewInit, OnDestroy {
     });
 
     // Backend
-    this.http.patch(`http://72.60.31.237:4000/paquetes/${paquete.id}`, { status: nuevoEstado })
+    this.http.patch(`https://72.60.31.237/api/paquetes/${paquete.id}`, { status: nuevoEstado })
       .subscribe({
         next: () => console.log('Estado actualizado correctamente'),
         error: err => console.error('Error actualizando estado:', err)

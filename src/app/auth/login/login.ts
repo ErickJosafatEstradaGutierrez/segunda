@@ -23,9 +23,9 @@ export class Login {
     const payload = { usuario: this.username, contrasena: this.password };
 
     this.http.post<{rol: string; usuario: string; message: string}>(
-      'https://72.60.31.2374000/login',
+      'https://72.60.31.237/api/login',
       payload,
-      { withCredentials: true } // ⚠️ permite que la cookie llegue al navegador
+      { withCredentials: true }
     )
     .subscribe({
       next: (res) => {
@@ -33,7 +33,10 @@ export class Login {
         else if (res.rol === 'delivery') this.router.navigate(['/delivery']);
         else this.error = 'Rol desconocido';
       },
-      error: (err) => this.error = err.error?.error || 'Error al iniciar sesión'
+      error: (err) => {
+        this.error = err.error?.error || 'Error al iniciar sesión';
+        console.error('Error en login:', err);
+      }
     });
   }
 }
