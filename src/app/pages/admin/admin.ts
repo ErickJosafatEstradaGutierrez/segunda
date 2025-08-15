@@ -3,6 +3,8 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { io, Socket } from 'socket.io-client';
+import '../leaflet-icons';
+
 
 // Importar Leaflet de forma estática
 import * as L from 'leaflet';
