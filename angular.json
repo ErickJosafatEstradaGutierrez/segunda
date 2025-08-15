@@ -19,15 +19,10 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*",
-                "input": "src/assets",
-                "output": "/assets"
               }
             ],
             "styles": [
-              "src/assets/leaflet/leaflet.css",
+              "node_modules/leaflet/dist/leaflet.css",
               "src/styles.css"
             ],
             "server": "src/main.server.ts",
@@ -83,11 +78,6 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*",
-                "input": "src/assets",
-                "output": "/assets"
               }
             ],
             "styles": [
