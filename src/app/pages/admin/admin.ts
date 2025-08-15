@@ -3,11 +3,6 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { io, Socket } from 'socket.io-client';
-import '../../leaflet-icons';
-
-
-
-// Importar Leaflet de forma estática
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -44,6 +39,14 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(this.platformId);
+
+    // Configurar íconos de Leaflet usando URLs externas
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    });
   }
 
   ngOnInit(): void {
