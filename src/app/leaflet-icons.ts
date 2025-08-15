@@ -1,6 +1,5 @@
 import * as L from 'leaflet';
 
-// Corregir paths de los íconos
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 L.Icon.Default.mergeOptions({
