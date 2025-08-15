@@ -2,6 +2,8 @@ import { Component, signal, AfterViewInit, Inject, PLATFORM_ID, OnDestroy } from
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface Paquete {
   id: number;
@@ -27,20 +29,18 @@ export class Delivery implements AfterViewInit, OnDestroy {
   paquetes = signal<Paquete[]>([]);
   repartidorActual: Repartidor = { id: 2, nombre: 'Repartidor fijo', status: 'off' };
 
-  private map: any;
-  private marker: any;
+  private map!: L.Map;
+  private marker!: L.Marker;
+  private accuracyCircle!: L.Circle;
   private watchId: number | null = null;
-  private L: any;
-  private accuracyCircle: any;
   private socket!: Socket;
   private intervalId: any;
 
   constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {}
 
-  async ngAfterViewInit(): Promise<void> {
+  ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    this.L = await import('leaflet');
     this.initMap();
     this.cargarPaquetes();
 
@@ -64,7 +64,6 @@ export class Delivery implements AfterViewInit, OnDestroy {
 
   toggleWorking(): void {
     const nuevoEstado: 'activo' | 'off' = this.repartidorActual.status === 'activo' ? 'off' : 'activo';
-
     this.http.patch(`https://72.60.31.237/proyecto2/api/api/usuarios/${this.repartidorActual.id}/status`, { status: nuevoEstado })
       .subscribe({
         next: () => this.repartidorActual.status = nuevoEstado,
@@ -76,7 +75,6 @@ export class Delivery implements AfterViewInit, OnDestroy {
     const select = event.target as HTMLSelectElement;
     const nuevoEstado = select.value as Paquete['status'];
 
-    // Frontend
     this.paquetes.update(lista => {
       const idx = lista.findIndex(p => p.id === paquete.id);
       if (idx === -1) return lista;
@@ -85,7 +83,6 @@ export class Delivery implements AfterViewInit, OnDestroy {
       return copia;
     });
 
-    // Backend
     this.http.patch(`https://72.60.31.237/proyecto2/api/api/paquetes/${paquete.id}`, { status: nuevoEstado })
       .subscribe({
         next: () => console.log('Estado actualizado correctamente'),
@@ -94,8 +91,9 @@ export class Delivery implements AfterViewInit, OnDestroy {
   }
 
   private initMap(): void {
-    this.map = this.L.map('map').setView([19.4326, -99.1332], 13);
-    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    this.map = L.map('map').setView([19.4326, -99.1332], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
 
@@ -113,10 +111,10 @@ export class Delivery implements AfterViewInit, OnDestroy {
     this.map.setView(latlng, 15);
 
     if (this.marker) this.marker.setLatLng(latlng);
-    else this.marker = this.L.marker(latlng).addTo(this.map).bindPopup('Tu ubicación actual').openPopup();
+    else this.marker = L.marker(latlng).addTo(this.map).bindPopup('Tu ubicación actual').openPopup();
 
     if (this.accuracyCircle) this.map.removeLayer(this.accuracyCircle);
-    this.accuracyCircle = this.L.circle(latlng, {
+    this.accuracyCircle = L.circle(latlng, {
       radius: pos.coords.accuracy,
       fillColor: '#136AEC',
       fillOpacity: 0.15,
@@ -132,7 +130,6 @@ export class Delivery implements AfterViewInit, OnDestroy {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
 
-      // Emitir la ubicación via Socket.IO
       this.socket.emit('updateLocation', {
         userId: this.repartidorActual.id,
         lat,

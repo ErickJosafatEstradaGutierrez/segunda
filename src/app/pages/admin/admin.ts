@@ -4,6 +4,10 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { io, Socket } from 'socket.io-client';
 
+// Importar Leaflet de forma estática
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
 interface DeliveryUser {
   id: number;
   usuario: string;
@@ -22,8 +26,7 @@ interface DeliveryUser {
 })
 export class Admin implements OnInit, AfterViewInit, OnDestroy {
   showModal = false;
-  private map: any;
-  private L: any;
+  private map: L.Map | undefined;
   deliveries: DeliveryUser[] = [];
   loading = true;
 
@@ -34,7 +37,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   private socket!: Socket;
 
   // Mapa de marcadores por ID de delivery
-  private markers: Map<number, any> = new Map();
+  private markers: Map<number, L.Marker> = new Map();
 
   constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -44,15 +47,15 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
     this.loadDeliveryData();
   }
 
-  async ngAfterViewInit(): Promise<void> {
+  ngAfterViewInit(): void {
     if (!this.isBrowser) return;
-    this.L = await import('leaflet');
     this.initMap();
     this.initSocket();
   }
 
   ngOnDestroy(): void {
     if (this.socket) this.socket.disconnect();
+    if (this.map) this.map.remove();
   }
 
   private initSocket() {
@@ -92,8 +95,9 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
 
   private initMap(): void {
     if (!this.isBrowser) return;
-    this.map = this.L.map('map').setView([19.4326, -99.1332], 13);
-    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    this.map = L.map('map').setView([19.4326, -99.1332], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
   }
@@ -105,7 +109,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       if (!d.ubicacion || d.status !== 'activo') {
         // Eliminar marcador si ya no es activo
         if (this.markers.has(d.id)) {
-          this.map.removeLayer(this.markers.get(d.id));
+          this.map!.removeLayer(this.markers.get(d.id)!);
           this.markers.delete(d.id);
         }
         return;
@@ -115,10 +119,10 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
 
       if (this.markers.has(d.id)) {
         // Mover marcador existente
-        this.markers.get(d.id).setLatLng([lat, lng]);
+        this.markers.get(d.id)!.setLatLng([lat, lng]);
       } else {
         // Crear nuevo marcador
-        const marker = this.L.marker([lat, lng]).addTo(this.map).bindPopup(d.usuario);
+        const marker = L.marker([lat, lng]).addTo(this.map!).bindPopup(d.usuario);
         this.markers.set(d.id, marker);
       }
     });
