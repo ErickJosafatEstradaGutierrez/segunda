@@ -72,7 +72,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadDeliveryData(): void {
-    this.http.get<DeliveryUser[]>('https://72.60.31.237/api/api/deliveries').subscribe({
+    this.http.get<DeliveryUser[]>('https://72.60.31.237/proyecto2/api/api/deliveries').subscribe({
       next: (data) => {
         this.deliveries = data;
         this.loading = false;
@@ -145,7 +145,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.http.post('https://72.60.31.237/api/api/paquetes', {
+    this.http.post('https://72.60.31.237/proyecto2/api/api/paquetes', {
       nombre_repartidor: this.selectedDelivery,
       direccion: this.paqueteUbicacion
     })
