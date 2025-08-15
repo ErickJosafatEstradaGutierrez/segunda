@@ -59,7 +59,7 @@ export class Delivery implements AfterViewInit, OnDestroy {
 
     // Conectar Socket.IO
     this.socket = io('https://72.60.31.237', {
-      path: '/proyecto2/api/api/socket.io',
+      path: '/proyecto2/api/socket.io',
       transports: ['websocket']
     });
 
