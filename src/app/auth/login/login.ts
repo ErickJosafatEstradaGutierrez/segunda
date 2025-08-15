@@ -23,7 +23,7 @@ export class Login {
     const payload = { usuario: this.username, contrasena: this.password };
 
     this.http.post<{rol: string; usuario: string; message: string}>(
-      'http://localhost:4000/login',
+      'https://72.60.31.2374000/login',
       payload,
       { withCredentials: true } // ⚠️ permite que la cookie llegue al navegador
     )
