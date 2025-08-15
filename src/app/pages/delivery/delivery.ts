@@ -1,8 +1,6 @@
 import { Component, signal, AfterViewInit, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { io, Socket } from 'socket.io-client';
-import * as L from 'leaflet';
 
 interface Paquete {
   id: number;
@@ -28,25 +26,33 @@ export class Delivery implements AfterViewInit, OnDestroy {
   paquetes = signal<Paquete[]>([]);
   repartidorActual: Repartidor = { id: 2, nombre: 'Repartidor fijo', status: 'off' };
 
-  private map!: L.Map;
-  private marker!: L.Marker;
-  private accuracyCircle!: L.Circle;
+  private map: any;
+  private marker: any;
+  private accuracyCircle: any;
   private watchId: number | null = null;
-  private socket!: Socket;
+  private socket: any;
   private intervalId: any;
+  private L: any;
+  private isBrowser: boolean;
 
   constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {
-    // Configurar íconos de Leaflet con URLs externas
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
+
+  async ngAfterViewInit(): Promise<void> {
+    if (!this.isBrowser) return;
+
+    // Import dinámico de Leaflet y Socket.IO
+    this.L = (await import('leaflet')).default;
+    const { io } = await import('socket.io-client');
+
+    // Configurar íconos de Leaflet usando URLs externas
+    delete (this.L.Icon.Default.prototype as any)._getIconUrl;
+    this.L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
     });
-  }
-
-  ngAfterViewInit(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
 
     this.initMap();
     this.cargarPaquetes();
@@ -98,9 +104,11 @@ export class Delivery implements AfterViewInit, OnDestroy {
   }
 
   private initMap(): void {
-    this.map = L.map('map').setView([19.4326, -99.1332], 13);
+    if (!this.isBrowser) return;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    this.map = this.L.map('map').setView([19.4326, -99.1332], 13);
+
+    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
 
@@ -114,14 +122,16 @@ export class Delivery implements AfterViewInit, OnDestroy {
   }
 
   private actualizarUbicacion(pos: GeolocationPosition) {
+    if (!this.isBrowser || !this.map) return;
+
     const latlng: [number, number] = [pos.coords.latitude, pos.coords.longitude];
     this.map.setView(latlng, 15);
 
     if (this.marker) this.marker.setLatLng(latlng);
-    else this.marker = L.marker(latlng).addTo(this.map).bindPopup('Tu ubicación actual').openPopup();
+    else this.marker = this.L.marker(latlng).addTo(this.map).bindPopup('Tu ubicación actual').openPopup();
 
     if (this.accuracyCircle) this.map.removeLayer(this.accuracyCircle);
-    this.accuracyCircle = L.circle(latlng, {
+    this.accuracyCircle = this.L.circle(latlng, {
       radius: pos.coords.accuracy,
       fillColor: '#136AEC',
       fillOpacity: 0.15,
@@ -131,23 +141,27 @@ export class Delivery implements AfterViewInit, OnDestroy {
   }
 
   private enviarUbicacion() {
-    if (!navigator.geolocation) return;
+    if (!this.isBrowser || !navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(pos => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
 
-      this.socket.emit('updateLocation', {
-        userId: this.repartidorActual.id,
-        lat,
-        lng
-      });
+      if (this.socket) {
+        this.socket.emit('updateLocation', {
+          userId: this.repartidorActual.id,
+          lat,
+          lng
+        });
+      }
 
       console.log(`Ubicación enviada: ${lat}, ${lng}`);
     });
   }
 
   ngOnDestroy(): void {
+    if (!this.isBrowser) return;
+
     if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
     if (this.map) this.map.remove();
     if (this.intervalId) clearInterval(this.intervalId);

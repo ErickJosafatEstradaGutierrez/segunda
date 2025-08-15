@@ -2,8 +2,6 @@ import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, OnDestroy } from
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { io, Socket } from 'socket.io-client';
-import * as L from 'leaflet';
 
 interface DeliveryUser {
   id: number;
@@ -23,7 +21,7 @@ interface DeliveryUser {
 })
 export class Admin implements OnInit, AfterViewInit, OnDestroy {
   showModal = false;
-  private map: L.Map | undefined;
+  private map: any; // Leaflet.Map dinámico
   deliveries: DeliveryUser[] = [];
   loading = true;
 
@@ -31,30 +29,34 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   paqueteUbicacion: string = '';
 
   private isBrowser: boolean;
-  private socket!: Socket;
-
-  private markers: Map<number, L.Marker> = new Map();
+  private socket: any;
+  private L: any; // Leaflet import dinámico
+  private markers: Map<number, any> = new Map(); // Leaflet.Marker dinámicos
 
   constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
-    // Configurar íconos de Leaflet usando URLs externas
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
+  async ngAfterViewInit(): Promise<void> {
+    if (!this.isBrowser) return;
+
+    // Import dinámico de Leaflet solo en navegador
+    this.L = (await import('leaflet')).default;
+
+    // Configurar íconos de Leaflet con URLs externas
+    delete (this.L.Icon.Default.prototype as any)._getIconUrl;
+    this.L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
     });
+
+    this.initMap();
+    await this.initSocket();
   }
 
   ngOnInit(): void {
     this.loadDeliveryData();
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.isBrowser) return;
-    this.initMap();
-    this.initSocket();
   }
 
   ngOnDestroy(): void {
@@ -62,7 +64,10 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
     if (this.map) this.map.remove();
   }
 
-  private initSocket() {
+  private async initSocket() {
+    if (!this.isBrowser) return;
+
+    const { io } = await import('socket.io-client');
     this.socket = io('https://72.60.31.237', {
       path: '/api/api/socket.io',
       transports: ['websocket']
@@ -97,9 +102,10 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
 
   private initMap(): void {
     if (!this.isBrowser) return;
-    this.map = L.map('map').setView([19.4326, -99.1332], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    this.map = this.L.map('map').setView([19.4326, -99.1332], 13);
+
+    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
   }
@@ -110,7 +116,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
     this.deliveries.forEach(d => {
       if (!d.ubicacion || d.status !== 'activo') {
         if (this.markers.has(d.id)) {
-          this.map!.removeLayer(this.markers.get(d.id)!);
+          this.map.removeLayer(this.markers.get(d.id));
           this.markers.delete(d.id);
         }
         return;
@@ -119,9 +125,9 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       const [lat, lng] = d.ubicacion.split(',').map(Number);
 
       if (this.markers.has(d.id)) {
-        this.markers.get(d.id)!.setLatLng([lat, lng]);
+        this.markers.get(d.id).setLatLng([lat, lng]);
       } else {
-        const marker = L.marker([lat, lng]).addTo(this.map!).bindPopup(d.usuario);
+        const marker = this.L.marker([lat, lng]).addTo(this.map).bindPopup(d.usuario);
         this.markers.set(d.id, marker);
       }
     });
@@ -151,8 +157,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
     this.http.post('https://72.60.31.237/proyecto2/api/api/paquetes', {
       nombre_repartidor: this.selectedDelivery,
       direccion: this.paqueteUbicacion
-    })
-    .subscribe({
+    }).subscribe({
       next: () => {
         alert('Paquete asignado correctamente');
         this.closeModal();
