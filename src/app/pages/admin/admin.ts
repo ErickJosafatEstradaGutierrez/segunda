@@ -81,24 +81,26 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadDeliveryData(): void {
-    this.http.get<DeliveryUser[]>('https://72.60.31.237/proyecto2/api/api/deliveries').subscribe({
-      next: (data) => {
-        this.deliveries = data;
-        this.loading = false;
-        if (this.isBrowser && this.map) this.updateMapWithDeliveryData();
-      },
-      error: (err) => {
-        console.error('Error cargando datos:', err);
-        // Datos de prueba
-        this.deliveries = [
-          { id: 2, usuario: "erick", contrasena: "123456", rol: "delivery", status: "activo", ubicacion: "19.4326, -99.1332" },
-          { id: 3, usuario: "pablito", contrasena: "123456", rol: "delivery", status: "inactivo", ubicacion: null }
-        ];
-        this.loading = false;
-        if (this.isBrowser && this.map) this.updateMapWithDeliveryData();
-      }
-    });
-  }
+  this.http.get<any[]>('https://72.60.31.237/proyecto2/api/api/deliveries').subscribe({
+    next: (data) => {
+      // Adaptar datos a la interfaz DeliveryUser
+      this.deliveries = data.map(d => ({
+        id: d.id,
+        usuario: d.nombre, // aquí cambiamos nombre -> usuario
+        contrasena: '', // si no viene, lo dejamos vacío
+        rol: 'delivery', // puedes ajustar si viene otro valor
+        status: d.status === 'working' ? 'activo' : 'inactivo', // convertimos a tus valores
+        ubicacion: d.ubicacion
+      }));
+      this.loading = false;
+      if (this.isBrowser && this.map) this.updateMapWithDeliveryData();
+    },
+    error: (err) => {
+      console.error('Error cargando datos:', err);
+      this.loading = false;
+    }
+  });
+}
 
   private initMap(): void {
     if (!this.isBrowser) return;
