@@ -69,7 +69,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
 
     const { io } = await import('socket.io-client');
     this.socket = io('https://72.60.31.237', {
-      path: '/api/api/socket.io',
+      path: '/proyecto2/api/api/socket.io',
       transports: ['websocket']
     });
 
