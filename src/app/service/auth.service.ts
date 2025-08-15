@@ -12,7 +12,7 @@ interface LoginResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'https://72.60.31.237/api/login'; // URL corregida
+  private apiUrl = 'https://72.60.31.237/api/api/login'; // URL corregida
 
   constructor(private http: HttpClient) {}
 

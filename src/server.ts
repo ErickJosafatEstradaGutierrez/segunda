@@ -24,7 +24,7 @@ app.use(bodyParser.json());
 /**
  * Endpoints API para el backend
  */
-app.post('/api/login', (req, res) => {
+app.post('/api/api/login', (req, res) => {
   // Este endpoint será manejado por tu lógica de backend real
   res.status(501).json({ error: 'Implementar lógica de login' });
 });
@@ -65,7 +65,7 @@ if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 4000;
   app.listen(port, () => {
     console.log(`Server running on https://72.60.31.237:${port}`);
-    console.log(`API endpoints available at https://72.60.31.237:${port}/api`);
+    console.log(`API endpoints available at https://72.60.31.237:${port}/api/api`);
   });
 }
 

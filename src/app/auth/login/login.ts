@@ -23,7 +23,7 @@ export class Login {
     const payload = { usuario: this.username, contrasena: this.password };
 
     this.http.post<{rol: string; usuario: string; message: string}>(
-      'https://72.60.31.237/api/login',
+      'https://72.60.31.237/api/api/login',
       payload,
       { withCredentials: true }
     )
