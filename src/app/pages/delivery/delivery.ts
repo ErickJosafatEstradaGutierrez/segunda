@@ -3,7 +3,6 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 interface Paquete {
   id: number;

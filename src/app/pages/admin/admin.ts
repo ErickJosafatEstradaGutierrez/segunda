@@ -4,7 +4,6 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { io, Socket } from 'socket.io-client';
 import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 interface DeliveryUser {
   id: number;
@@ -34,7 +33,6 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
   private isBrowser: boolean;
   private socket!: Socket;
 
-  // Mapa de marcadores por ID de delivery
   private markers: Map<number, L.Marker> = new Map();
 
   constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {
@@ -70,12 +68,9 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       transports: ['websocket']
     });
 
-    // Escuchar cambios de ubicación en tiempo real
     this.socket.on('locationUpdated', (data: { userId: number; lat: number; lng: number }) => {
       const idx = this.deliveries.findIndex(d => d.id === data.userId);
-      if (idx !== -1) {
-        this.deliveries[idx].ubicacion = `${data.lat},${data.lng}`;
-      }
+      if (idx !== -1) this.deliveries[idx].ubicacion = `${data.lat},${data.lng}`;
       this.updateMapWithDeliveryData();
     });
   }
@@ -89,6 +84,7 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error cargando datos:', err);
+        // Datos de prueba
         this.deliveries = [
           { id: 2, usuario: "erick", contrasena: "123456", rol: "delivery", status: "activo", ubicacion: "19.4326, -99.1332" },
           { id: 3, usuario: "pablito", contrasena: "123456", rol: "delivery", status: "inactivo", ubicacion: null }
@@ -113,7 +109,6 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
 
     this.deliveries.forEach(d => {
       if (!d.ubicacion || d.status !== 'activo') {
-        // Eliminar marcador si ya no es activo
         if (this.markers.has(d.id)) {
           this.map!.removeLayer(this.markers.get(d.id)!);
           this.markers.delete(d.id);
@@ -124,10 +119,8 @@ export class Admin implements OnInit, AfterViewInit, OnDestroy {
       const [lat, lng] = d.ubicacion.split(',').map(Number);
 
       if (this.markers.has(d.id)) {
-        // Mover marcador existente
         this.markers.get(d.id)!.setLatLng([lat, lng]);
       } else {
-        // Crear nuevo marcador
         const marker = L.marker([lat, lng]).addTo(this.map!).bindPopup(d.usuario);
         this.markers.set(d.id, marker);
       }
